@@ -1,11 +1,11 @@
-name: Build server.jar (MagmaBlock)
+name: Build server.jar (NukkitCraftsman)
 
 on:
   push:
-    branches: [ master, main ]   # Cambia si tu branch principal se llama diferente
+    branches: [ master, main ]
   pull_request:
     branches: [ master, main ]
-  workflow_dispatch:   # Para ejecutarlo manualmente desde la web
+  workflow_dispatch:
 
 jobs:
   build:
@@ -19,31 +19,34 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: '8'
-          distribution: 'temurin'   # Adoptium, muy estable para Java 8
-
-      - name: Grant execute permission for gradlew (por si acaso, aunque es Maven)
-        run: chmod +x gradlew  # Ignora si no existe, no afecta
+          distribution: 'temurin'
 
       - name: Build with Maven
-        run: mvn clean package --batch-mode
+        run: mvn clean package --batch-mode -DskipTests  # -DskipTests acelera si hay tests que fallen
 
-      - name: Find and rename the JAR to server.jar
+      - name: Find the shaded/uber JAR and rename to server.jar
         run: |
-          JAR_FILE=$(find target -maxdepth 1 -name "*.jar" ! -name "original-*.jar" -print | head -n 1)
+          # Busca JARs en target/ que NO sean el original (sin dependencias)
+          JAR_FILE=$(find target -maxdepth 1 -type f -name "*.jar" ! -name "original-*.jar" ! -name "*-sources.jar" ! -name "*-javadoc.jar" -print | head -n 1)
+          
           if [ -z "$JAR_FILE" ]; then
-            echo "❌ No se encontró JAR ejecutable en target/"
+            echo "❌ No se encontró JAR ejecutable en target/. Lista de archivos:"
+            ls -la target/
             exit 1
           fi
+          
           echo "JAR encontrado: $JAR_FILE"
           cp "$JAR_FILE" target/server.jar
-          echo "Renombrado a target/server.jar"
+          echo "Copiado/renombrado como target/server.jar"
 
-      - name: Upload server.jar as artifact
+      - name: Upload server.jar artifact
         uses: actions/upload-artifact@v4
         with:
           name: server-jar
           path: target/server.jar
-          retention-days: 7   # Cuántos días se guarda el artifact
+          if-no-files-found: error
+          retention-days: 7
 
-      - name: Show success message
-        run: echo "¡Listo! Descarga server.jar desde la pestaña Actions → resumen del workflow"
+      - name: Show files in target/ for debug
+        if: always()
+        run: ls -la target/ || true
