@@ -36,6 +36,7 @@ public abstract class Biome {
 
     public static final int BIRCH_FOREST = 27;
 
+    public static final int HELL = 8;
 
     public static final int MAX_BIOMES = 256;
 
@@ -75,6 +76,8 @@ public abstract class Biome {
         register(BIRCH_FOREST, new ForestBiome(ForestBiome.TYPE_BIRCH));
 
         register(BEACH, new BeachBiome());
+
+        register(HELL, new HellBiome());
     }
 
     public static Biome getBiome(int id) {
