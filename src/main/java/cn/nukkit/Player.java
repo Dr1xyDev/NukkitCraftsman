@@ -4025,12 +4025,79 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
         return this.foodData;
     }
 
-    //todo a lot on dimension
+    // Dimension change support
 
     public void setDimension() {
         ChangeDimensionPacket pk = new ChangeDimensionPacket();
         pk.dimension = (byte) (getLevel().getDimension() & 0xff);
+        pk.x = (float) this.x;
+        pk.y = (float) this.y;
+        pk.z = (float) this.z;
         this.dataPacket(pk);
+    }
+
+    /**
+     * Teleport player to the Nether dimension
+     */
+    public void teleportToNether() {
+        Server server = this.server;
+        String netherName = server.getPropertyString("nether-world-name", "nether");
+        Level netherLevel = server.getLevelByName(netherName);
+
+        if (netherLevel == null) {
+            if (!server.loadLevel(netherName)) {
+                server.generateLevel(netherName, server.getDefaultLevel().getSeed(),
+                        cn.nukkit.level.generator.Nether.class);
+                netherLevel = server.getLevelByName(netherName);
+                if (netherLevel != null) {
+                    netherLevel.setDimension(Level.DIMENSION_NETHER);
+                }
+            } else {
+                netherLevel = server.getLevelByName(netherName);
+                if (netherLevel != null && netherLevel.getDimension() == Level.DIMENSION_OVERWORLD) {
+                    netherLevel.setDimension(Level.DIMENSION_NETHER);
+                }
+            }
+            if (netherLevel == null) return;
+        }
+
+        double targetX = this.getFloorX() / 8.0;
+        double targetZ = this.getFloorZ() / 8.0;
+        double targetY = Math.min(this.getFloorY(), 100);
+
+        Location target = new Location(targetX + 0.5, targetY, targetZ + 0.5, this.yaw, this.pitch, netherLevel);
+
+        ChangeDimensionPacket pk = new ChangeDimensionPacket();
+        pk.dimension = (byte) Level.DIMENSION_NETHER;
+        pk.x = (float) target.x;
+        pk.y = (float) target.y;
+        pk.z = (float) target.z;
+        this.dataPacket(pk);
+
+        this.teleport(target);
+    }
+
+    /**
+     * Teleport player back to the Overworld from the Nether
+     */
+    public void teleportToOverworld() {
+        Level overworld = this.server.getDefaultLevel();
+        if (overworld == null) return;
+
+        double targetX = this.getFloorX() * 8.0;
+        double targetZ = this.getFloorZ() * 8.0;
+        double targetY = Math.min(this.getFloorY(), 100);
+
+        Location target = new Location(targetX + 0.5, targetY, targetZ + 0.5, this.yaw, this.pitch, overworld);
+
+        ChangeDimensionPacket pk = new ChangeDimensionPacket();
+        pk.dimension = (byte) Level.DIMENSION_OVERWORLD;
+        pk.x = (float) target.x;
+        pk.y = (float) target.y;
+        pk.z = (float) target.z;
+        this.dataPacket(pk);
+
+        this.teleport(target);
     }
 
     public synchronized void setLocale(Locale locale) {
