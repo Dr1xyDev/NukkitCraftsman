@@ -207,7 +207,7 @@ public class Level implements ChunkManager, Metadatable {
 
     private long levelCurrentTick = 0;
 
-    private final int dimension = DIMENSION_OVERWORLD;
+    private int dimension = DIMENSION_OVERWORLD;
 
     public Level(Server server, String name, String path, Class<? extends LevelProvider> provider) {
         this.blockStates = Block.fullList;
@@ -2892,6 +2892,10 @@ public class Level implements ChunkManager, Metadatable {
 
     public int getDimension() {
         return dimension;
+    }
+
+    public void setDimension(int dimension) {
+        this.dimension = dimension;
     }
 
     public boolean canBlockSeeSky(Vector3 pos) {
